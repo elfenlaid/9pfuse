@@ -14,6 +14,11 @@
  * writing the 9P connection.  Thus the many threads in the
  * request proc can do 9P interactions without blocking.
  */
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <assert.h>
  
 #define _GNU_SOURCE 1	/* for O_DIRECTORY on Linux */
 #include "a.h"
@@ -150,9 +155,20 @@ init9p(char *addr, char *spec)
 
 	if(strcmp(addr, "-") == 0)
 		fd = 0;
-	else
+	else if(addr[0] == '+') {
+		fd = atoi(addr + 1);
+		struct tcp_info info = {0};
+		socklen_t len = sizeof(info);
+
+		assert(getsockopt(fd, IPPROTO_TCP, TCP_INFO, &info, &len) == 0);
+		assert(info.tcpi_state == TCP_ESTABLISHED);
+
+		int one = 1;
+		setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof one);
+	} else
 		if((fd = dial(netmkaddr(addr, "tcp", "564"), nil, nil, nil)) < 0)
 			sysfatal("dial %s: %r", addr);
+
 	proccreate(watchfd, (void*)(uintptr)fd, STACK);
 	if((fsys = fsmount(fd, spec)) == nil)
 		sysfatal("fsmount: %r");
