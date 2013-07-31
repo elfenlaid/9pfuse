@@ -12,9 +12,14 @@ sizeD2M(Dir *d)
 	sv[1] = d->uid;
 	sv[2] = d->gid;
 	sv[3] = d->muid;
+#ifdef PROTO_9P2000U
+	sv[4] = d->ext;
 	
-	fixlen = STATFIXLEN;
+	nstr = 5;
+#else
 	nstr = 4;
+#endif
+	fixlen = STATFIXLEN;
 	
 	ns = 0;
 	for(i = 0; i < nstr; i++)
@@ -41,9 +46,14 @@ convD2M(Dir *d, uchar *buf, uint nbuf)
 	sv[1] = d->uid;
 	sv[2] = d->gid;
 	sv[3] = d->muid;
-
-	fixlen = STATFIXLEN;
+#ifdef PROTO_9P2000U
+	sv[4] = d->ext;
+	
+	nstr = 5;
+#else
 	nstr = 4;
+#endif
+	fixlen = STATFIXLEN;
 	
 	ns = 0;
 	for(i = 0; i < nstr; i++){
@@ -93,6 +103,15 @@ convD2M(Dir *d, uchar *buf, uint nbuf)
 			memmove(p, sv[i], ns);
 		p += ns;
 	}
+
+#ifdef PROTO_9P2000U
+	PBIT32(p, d->uidnum);
+	p += BIT32SZ;
+	PBIT32(p, d->gidnum);
+	p += BIT32SZ;
+	PBIT32(p, d->muidnum);
+	p += BIT32SZ;
+#endif
 	
 	if(ss != p - buf)
 		return 0;
