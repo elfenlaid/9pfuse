@@ -59,6 +59,8 @@ char *aname = "";
 void fusedispatch(void*);
 Channel *fusechan;
 
+uint mode2type(ulong mode);
+
 enum
 {
 	STACK = 8192
@@ -327,7 +329,8 @@ dir2attr(Dir *d, struct fuse_attr *attr)
 {
 	attr->ino = qid2inode(d->qid);
 	attr->size = d->length;
-	attr->blocks = (d->length+8191)/8192;
+	//attr->blocks = (d->length+8191)/8192;
+	attr->blocks = 0;
 	attr->atime = d->atime;
 	attr->mtime = d->mtime;
 	attr->ctime = d->mtime;	/* not right */
@@ -981,12 +984,42 @@ canpack(Dir *d, uvlong off, uchar **pp, uchar *ep)
 	de->ino = qid2inode(d->qid);
 	de->off = off;
 	de->namelen = strlen(d->name);
+	de->type = mode2type(d->mode);
+
 	memmove(de->name, d->name, de->namelen);
 	if(pad > 0)
 		memset(de->name+de->namelen, 0, pad);
 	*pp = p+size+pad;
 	return 1;
 }
+
+uint
+mode2type(ulong mode)
+{
+/*
+ * File types (from linux/fs.h)
+ *
+ * NOTE! These match bits 12..15 of stat.st_mode
+ * (ie "(i_mode >> 12) & 15").
+ */
+#define DT_UNKNOWN      0
+#define DT_FIFO         1
+#define DT_CHR          2
+#define DT_DIR          4
+#define DT_BLK          6
+#define DT_REG          8
+#define DT_LNK          10
+#define DT_SOCK         12
+#define DT_WHT          14
+
+	if(mode&DMDIR)
+		return DT_DIR;
+	else if(mode&DMSYMLINK)
+		return DT_LNK;
+	else
+		return DT_REG;
+}
+
 
 /*
  * Write.

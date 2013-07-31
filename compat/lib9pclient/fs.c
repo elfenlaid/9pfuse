@@ -49,7 +49,7 @@ fsinit(int fd)
 	fs->iosend = ioproc();
 	muxinit(&fs->mux);
 	
-	strcpy(fs->version, "9P2000.u");
+	strcpy(fs->version, VERSION9P);
 	if((n = fsversion(fs, 8192, fs->version, sizeof fs->version)) < 0){
 		werrstr("fsversion: %r");
 		_fsunmount(fs);

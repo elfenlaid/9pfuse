@@ -13,14 +13,23 @@ statcheck(uchar *buf, uint nbuf)
 	if(nbuf < STATFIXLEN || nbuf != BIT16SZ + GBIT16(buf))
 		return -1;
 
-	buf += STATFIXLEN - 4 * BIT16SZ;
 
+#ifdef PROTO_9P2000U
+	nstr = 5;
+#else
 	nstr = 4;
+#endif
+
+	buf += BIT16SZ;
+	buf += STATFIXLENORIG - nstr * BIT16SZ;
+
 	for(i = 0; i < nstr; i++){
 		if(buf + BIT16SZ > ebuf)
 			return -1;
 		buf += BIT16SZ + GBIT16(buf);
 	}
+
+	buf += STATFIXLENUEXT - BIT16SZ;
 
 	if(buf != ebuf)
 		return -1;
@@ -63,7 +72,11 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 	d->length = GBIT64(p);
 	p += BIT64SZ;
 
+#ifdef PROTO_9P2000U
 	nstr = 5;
+#else
+	nstr = 4;
+#endif
 	for(i = 0; i < nstr; i++){
 		if(p + BIT16SZ > ebuf)
 			return 0;
@@ -85,7 +98,11 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 		d->uid = sv[1];
 		d->gid = sv[2];
 		d->muid = sv[3];
+#ifdef PROTO_9P2000U
 		d->ext = sv[4];
+#else
+		d->ext = nullstring;
+#endif
 	}else{
 		d->name = nullstring;
 		d->uid = nullstring;
@@ -94,12 +111,14 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 		d->ext = nullstring;
 	}
 
+#ifdef PROTO_9P2000U
 	d->uidnum = GBIT32(p);
 	p += BIT32SZ;
 	d->gidnum = GBIT32(p);
 	p += BIT32SZ;
 	d->muidnum = GBIT32(p);
 	p += BIT32SZ;
+#endif
 	
 	return p - buf;
 }

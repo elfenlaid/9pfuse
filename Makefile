@@ -1,5 +1,5 @@
 
-CPPFLAGS += -Icompat -D__Linux26__
+CPPFLAGS += -Icompat -D__Linux26__ -DPROTO_9P2000U
 
 C := $(wildcard *.c) $(wildcard compat/*/*.c) $(wildcard compat/*.c)
 O := $(patsubst %.c,%.o,$C)

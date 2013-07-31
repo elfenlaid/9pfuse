@@ -8,7 +8,12 @@ extern "C" {
 #pragma	lib	"libc.a"
 */
 
+#ifdef PROTO_9P2000U
+#define	VERSION9P	"9P2000.u"
+#else
 #define	VERSION9P	"9P2000"
+#endif
+
 #define	MAXWELEM	16
 
 typedef
@@ -69,8 +74,15 @@ struct	Fcall
 
 /* STATFIXLEN includes leading 16-bit count */
 /* The count, however, excludes itself; total size is BIT16SZ+count */
-#define STATFIXLEN	(BIT16SZ+QIDSZ+5*BIT16SZ+4*BIT32SZ+1*BIT64SZ)	/* amount of fixed length data in a stat buffer */
-#define STATFIXLENU	(STATFIXLEN+BIT16SZ+3*BIT32SZ)	/* for 9P2000.u */
+#define STATFIXLENORIG	(BIT16SZ+QIDSZ+5*BIT16SZ+4*BIT32SZ+1*BIT64SZ)	/* amount of fixed length data in a stat buffer */
+#define STATFIXLENUEXT	(BIT16SZ+3*BIT32SZ)
+#define STATFIXLENU	(STATFIXLENORIG+STATFIXLENUEXT)	/* for 9P2000.u */
+
+#ifdef PROTO_9P2000U
+#define STATFIXLEN	STATFIXLENU
+#else
+#define STATFIXLEN	STATFIXLENORIG
+#endif
 
 #define	NOTAG		(ushort)~0U	/* Dummy tag */
 #define	NOFID		(u32int)~0U	/* Dummy fid */
