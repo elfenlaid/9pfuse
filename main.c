@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <assert.h>
+#include <dirent.h>
  
 #define _GNU_SOURCE 1	/* for O_DIRECTORY on Linux */
 #include "a.h"
@@ -58,8 +59,6 @@ char *argv0;
 char *aname = "";
 void fusedispatch(void*);
 Channel *fusechan;
-
-uint mode2type(ulong mode);
 
 enum
 {
@@ -321,7 +320,11 @@ nodeid2fid(uvlong nodeid)
 uvlong
 qid2inode(Qid q)
 {
+#ifdef NO_IGNORE_INODES
 	return q.path | ((uvlong)q.type<<56);
+#else
+	return 1;
+#endif
 }
 
 void
@@ -891,6 +894,8 @@ fusereadlink(FuseMsg *m)
  */
 int canpack(Dir*, uvlong, uchar**, uchar*);
 Dir *dotdirs(CFid*);
+uint mode2type(ulong mode);
+
 void
 fusereaddir(FuseMsg *m)
 {
@@ -907,8 +912,10 @@ fusereaddir(FuseMsg *m)
 	if(in->offset == 0){
 		fsseek(ff->fid, 0, 0);
 		free(ff->d0);
+#if 0
 		ff->d0 = ff->d = dotdirs(ff->fid);
 		ff->nd = 2;
+#endif
 	}
 	n = in->size;
 	if(n > fusemaxwrite)
@@ -996,22 +1003,6 @@ canpack(Dir *d, uvlong off, uchar **pp, uchar *ep)
 uint
 mode2type(ulong mode)
 {
-/*
- * File types (from linux/fs.h)
- *
- * NOTE! These match bits 12..15 of stat.st_mode
- * (ie "(i_mode >> 12) & 15").
- */
-#define DT_UNKNOWN      0
-#define DT_FIFO         1
-#define DT_CHR          2
-#define DT_DIR          4
-#define DT_BLK          6
-#define DT_REG          8
-#define DT_LNK          10
-#define DT_SOCK         12
-#define DT_WHT          14
-
 	if(mode&DMDIR)
 		return DT_DIR;
 	else if(mode&DMSYMLINK)
